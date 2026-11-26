@@ -1,0 +1,21 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./reports:/app/reports
+    environment:
+      - FRAUD_GUARD_PORT=8001
+      - FRAUD_GUARD_DB_URL=sqlite:///./fraud_guard.db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - api

@@ -1,0 +1,134 @@
+# Fraud Guard — central configuration (all tunable knobs live here)
+
+project:
+  name: Fraud Guard
+  version: "1.0.0"
+  seed: 42
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  models_dir: models
+  figures_dir: reports/figures
+  results_file: reports/results.json
+
+datasets:
+  # Primary supervised dataset (ULB credit card fraud)
+  primary: ulb
+  # Entity Bayesian module: paysim if available, else synthetic IDs on ULB
+  entity_source: paysim  # paysim | synthetic_ulb
+  ulb:
+    filename: creditcard.csv
+    kaggle_dataset: mlg-ulb/creditcardfraud
+    target_col: Class
+    time_col: Time
+    amount_col: Amount
+  paysim:
+    filename: PS_20174392719_1491204439457_log.csv
+    kaggle_dataset: ealaxi/paysim1
+    # Cap rows for laptop RAM (8 GB). Full PaySim is ~6.3M rows.
+    max_rows: 200000
+    sample_seed: 42
+
+split:
+  # Time-based split — NEVER shuffle before splitting
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+preprocessing:
+  amount_log: true
+  robust_scale_amount: true
+  cyclical_hour: true
+  # Seconds in a day for ULB Time column
+  seconds_per_day: 86400
+
+features:
+  entity_windows_hours: [1, 24]
+  velocity_enabled: true
+
+imbalance:
+  # Compared in Phase 3 experiments; never applied to val/test
+  methods: [class_weights, undersample, smote, focal_loss]
+  smote_k_neighbors: 5
+  undersample_ratio: 0.1  # fraud:majority after undersampling ≈ 1:10
+
+model:
+  nn:
+    hidden_dims: [128, 64, 32]
+    dropout: 0.25
+    batch_norm: true
+    activation: relu
+    epochs: 40
+    batch_size: 2048
+    lr: 0.001
+    weight_decay: 0.0001
+    early_stopping_patience: 7
+    focal_gamma: 2.0
+    focal_alpha: 0.25
+  bnn:
+    method: mc_dropout  # mc_dropout | bayes_by_backprop
+    mc_passes: 40
+    dropout_inference: 0.25
+  autoencoder:
+    hidden_dims: [32, 16, 8]
+    epochs: 30
+    batch_size: 2048
+    lr: 0.001
+  baselines:
+    logistic_max_iter: 1000
+    rf_n_estimators: 100
+    rf_max_depth: 12
+    xgb_n_estimators: 200
+    xgb_max_depth: 6
+    xgb_learning_rate: 0.05
+    iforest_n_estimators: 100
+    iforest_contamination: 0.002
+
+bayes_entity:
+  # Prior ≈ global fraud rate ~0.172% → mean = α/(α+β) ≈ 0.002
+  alpha0: 1.0
+  beta0: 500.0
+  decay_per_day: 0.99
+
+ensemble:
+  # Learned on validation; defaults used until stacking is fit
+  w_nn: 0.55
+  w_entity: 0.25
+  w_anomaly: 0.20
+
+decision:
+  c_fp: 5.0          # cost of false positive (friction / investigation)
+  c_fn_multiplier: 1.0  # C_fn = amount * multiplier
+  c_review: 2.0
+  review_uncertainty_threshold: 0.12
+  review_margin: 0.05   # band around decision boundary
+  # Optimised on val; placeholders until Phase 6
+  block_threshold: 0.5
+  review_low: 0.3
+  review_high: 0.7
+
+explain:
+  shap_background_size: 100
+  top_k_reasons: 5
+  use_surrogate: true  # XGBoost TreeExplainer for speed on CPU
+
+api:
+  host: 0.0.0.0
+  port: 8001
+  cors_origins: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
+  db_url: sqlite:///./fraud_guard.db
+
+simulator:
+  default_rate_tps: 5
+  min_rate: 1
+  max_rate: 100
+  dataset_slice: test  # train | val | test
+
+evaluation:
+  primary_metric: pr_auc
+  n_seeds: 5
+  latency_warmup: 20
+  latency_n_requests: 200
+  recall_at_precision: 0.90
+  ece_bins: 15

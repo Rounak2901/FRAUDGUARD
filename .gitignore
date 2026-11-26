@@ -1,0 +1,54 @@
+# Data (large / private)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Models & artifacts (keep structure)
+models/*
+!models/.gitkeep
+!models/README.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Reports with large binaries (keep figures folder)
+reports/*.pdf
+!reports/figures/.gitkeep
+
+# SQLite runtime DB
+*.db
+*.sqlite3
