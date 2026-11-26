@@ -29,7 +29,7 @@ npm install
 npm run dev
 ```
 
-- Dashboard: http://127.0.0.1:5173 (or the port Vite prints)  
+- Dashboard: http://127.0.0.1:5174 (or the port Vite prints)  
 - API docs: http://127.0.0.1:8001/docs  
 
 ### Docker
@@ -38,7 +38,7 @@ npm run dev
 docker compose up --build
 ```
 
-- UI: http://localhost:5173  
+- UI: http://localhost:5174
 - API: http://localhost:8001/docs  
 
 ---
